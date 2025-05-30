@@ -8,8 +8,6 @@ A comprehensive Retrieval-Augmented Generation (RAG) system for processing, stor
   <img src="https://i.ibb.co/SDdNZ6cs/Desktop.png" alt="Demo Video Thumbnail" width="600"/>
 </a>
 
-[🔗 Open in new tab](https://www.loom.com/share/fc0875e4e95441048363ae7eb0e22eb3?sid=da32f20e-3377-44ff-9039-50aa7bbed3bd)
-
 ## Table of Contents
 
 - [Overview](#overview)
