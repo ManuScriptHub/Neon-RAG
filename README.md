@@ -1,6 +1,6 @@
-# RAG-ify
+# Neon-RAG
 
-A comprehensive Retrieval-Augmented Generation (RAG) system for processing, storing, and retrieving document information with advanced AI capabilities, featuring both a powerful backend API and a modern React frontend.
+A comprehensive Retrieval-Augmented Generation (RAG) system for processing, storing, and retrieving document information with advanced AI capabilities, featuring both a powerful backend API and a modern React frontend. This project leverages Neon's PostgreSQL serverless database with pgRAG extensions for efficient vector search and reranking.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ A comprehensive Retrieval-Augmented Generation (RAG) system for processing, stor
 
 ## Overview
 
-RAG-ify is a powerful RAG (Retrieval-Augmented Generation) system that allows users to process documents, extract text, chunk content, generate embeddings, and perform semantic searches. The system uses state-of-the-art AI models for text processing, embedding generation, and reranking to provide accurate and relevant information retrieval.
+Neon-RAG is a powerful RAG (Retrieval-Augmented Generation) system that allows users to process documents, extract text, chunk content, generate embeddings, and perform semantic searches. The system uses state-of-the-art AI models for text processing, embedding generation, and reranking to provide accurate and relevant information retrieval.
 
 The project consists of two main components:
 1. **Backend API**: A FastAPI-based server that handles document processing, embedding generation, and semantic search
@@ -27,38 +27,41 @@ The project consists of two main components:
 ## Project Structure
 
 ```
-RAG-ify/
+Neon-RAG/
 ├── server/                        # Backend API
-│   ├── ddl-schema/
-│   │   └── ddl.sql                # Database schema definition
-│   └── src/
-│       ├── api/
-│       │   └── routes.py          # API route definitions
-│       ├── controllers/
-│       │   ├── auth.py            # Authentication controller
-│       │   ├── corpora.py         # Corpus management
-│       │   ├── documents.py       # Document management
-│       │   ├── document_chunk.py  # Document chunk management
-│       │   └── users.py           # User management
-│       ├── core/
-│       │   ├── config.py          # Application configuration
-│       │   └── db.py              # Database connection
-│       ├── models/
-│       │   ├── auth.py            # Authentication models
-│       │   ├── corpora.py         # Corpus models
-│       │   ├── documents.py       # Document models
-│       │   ├── document_chunk.py  # Document chunk models
-│       │   └── users.py           # User models
-│       ├── services/
-│       │   ├── chunking.py        # Text chunking service
-│       │   ├── embedding.py       # Embedding generation service
-│       │   ├── llm_services.py    # LLM integration service
-│       │   ├── process_document.py # Document processing pipeline
-│       │   ├── reranker.py        # Reranking service
-│       │   └── text_extractor.py  # Text extraction from various file types
-│       └── server.py              # Main FastAPI application
+│   ├── ddl-schema/                # Database schema definitions
+│   ├── server/
+│   │   └── src/
+│   │       ├── api/
+│   │       │   └── routes.py      # API route definitions
+│   │       ├── controllers/
+│   │       │   ├── auth.py        # Authentication controller
+│   │       │   ├── corpora.py     # Corpus management
+│   │       │   ├── documents.py   # Document management
+│   │       │   ├── document_chunk.py # Document chunk management
+│   │       │   └── users.py       # User management
+│   │       ├── core/
+│   │       │   ├── config.py      # Application configuration
+│   │       │   └── db.py          # Database connection
+│   │       ├── models/
+│   │       │   ├── auth.py        # Authentication models
+│   │       │   ├── corpora.py     # Corpus models
+│   │       │   ├── documents.py   # Document models
+│   │       │   ├── document_chunk.py # Document chunk models
+│   │       │   └── users.py       # User models
+│   │       ├── services/
+│   │       │   ├── chunking.py    # Text chunking service
+│   │       │   ├── embedding.py   # Embedding generation service
+│   │       │   ├── llm_services.py # LLM integration service
+│   │       │   ├── process_document.py # Document processing pipeline
+│   │       │   ├── reranker.py    # Reranking service
+│   │       │   └── text_extractor.py # Text extraction from various file types
+│   │       └── server.py          # Main FastAPI application
+│   ├── init_neon_db.py            # Database initialization script
+│   ├── migrate_to_neon.py         # Database migration script
+│   └── test_db_connection.py      # Database connection test
 │
-├── rag-navigator-unleashed/       # Frontend Application
+├── client/                        # Frontend Application
 │   ├── public/                    # Static assets
 │   ├── src/
 │   │   ├── components/            # React components
@@ -91,7 +94,7 @@ RAG-ify/
 ### Backend Features
 - **Document Processing**: Extract text from various file formats (PDF, DOCX, PPTX, images)
 - **Text Chunking**: Split documents into manageable chunks using manual or AI-assisted methods
-- **Embedding Generation**: Create vector embeddings for document chunks using VoyageAI models
+- **Embedding Generation**: Create vector embeddings for document chunks using VoyageAI models and pgRAG
 - **Semantic Search**: Find relevant document chunks based on query similarity
 - **Reranking**: Improve search results with advanced reranking algorithms
 - **User Management**: Create and manage user accounts
@@ -103,7 +106,6 @@ RAG-ify/
 - **Document Management**: Upload, view, and organize documents in your knowledge base
 - **Corpus Organization**: Create and manage document collections
 - **Search Visualization**: View and explore search results with confidence scores
-- **Result Export**: Export search results in various formats (PDF, DOCX, CSV, JSON)
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Authentication**: Secure user login and registration
 
@@ -111,7 +113,8 @@ RAG-ify/
 
 ### Backend
 - **FastAPI**: High-performance web framework for building APIs
-- **PostgreSQL**: Database with pgvector extension for vector similarity search
+- **Neon PostgreSQL**: Serverless PostgreSQL database with pgRAG extensions
+- **pgRAG**: PostgreSQL extensions for vector similarity search and reranking
 - **psycopg2**: PostgreSQL adapter for Python
 
 ### Frontend
@@ -120,17 +123,22 @@ RAG-ify/
 - **Vite**: Next-generation frontend build tool
 - **Tailwind CSS**: Utility-first CSS framework
 - **shadcn/ui**: Reusable UI components built with Radix UI and Tailwind
-- **React Markdown**: Markdown rendering for search results
 
-### AI and ML
-- **VoyageAI**: For embedding generation and reranking
+### AI Integration
+- **VoyageAI**: For external embedding generation
   - Embedding Model: `voyage-3-large` - State-of-the-art embedding model for text representation
-  - Reranker: `rerank-2` - Advanced reranking model to improve search relevance
-- **Groq**: For LLM services
-  - Model: `llama-3.3-70b-versatile` - Large language model for text processing and analysis
+- **Mistral AI**: For LLM services
+  - Model: `mistral-large-latest` - Large language model for text processing and analysis
+- **pgRAG Models**:
+  - `rag`: Core pgRAG functionality for vector operations (Unstable)
+  - `rag_bge_small_en_v15`: For local embedding generation (Unstable)
+  - `rag_jina_reranker_v1_tiny_en`: For local reranking (Unstable)
+  - `pgvector`: PostgreSQL extension for vector similarity search
+  - `rag_extraction`: For text extraction from documents (Unstable)
+  - `rag_chunking`: For intelligent text chunking (Unstable)
 
 ### Document Processing
-- **PyMuPDF/PyMuPDF4LLM**: PDF processing
+- **PyMuPDF**: PDF processing
 - **python-docx**: DOCX file processing
 - **python-pptx**: PowerPoint file processing
 - **Pillow & pytesseract**: Image processing and OCR
@@ -143,6 +151,7 @@ RAG-ify/
 - `POST /api/v1/chunking`: Split text into manageable chunks
 - `POST /api/v1/embedding`: Generate embeddings for text chunks
 - `POST /api/v1/rerank`: Rerank search results based on relevance
+- `POST /api/v1/process-document`: Process a document through the entire pipeline
 
 ### User Management
 - `GET /api/v1/users`: Get all users
@@ -176,37 +185,19 @@ RAG-ify/
 ### Authentication
 - `POST /api/v1/register`: Register a new user
 - `POST /api/v1/login`: Login a user
-- `POST /api/v1/change-password`: Change a user's password
-- `POST /api/v1/reset-password-request`: Request a password reset
 
 ## Models and Services
 
 ### Embedding Service
-Uses VoyageAI's `voyage-3-large` model to generate high-quality embeddings for text chunks. These embeddings are stored in the database and used for semantic search.
+The system supports two embedding approaches:
 
-```python
-# Example usage
-from services.embedding import get_embedding
-embeddings = get_embedding("voyage-3-large", ["Your text here"])
-```
+1. **VoyageAI Embeddings** (External API):
 
-### Reranking Service
-Uses VoyageAI's `rerank-2` model to improve search results by reordering them based on relevance to the query.
+2. **pgRAG Text Extraction & Chunking** (Local in Neon Database):
 
-```python
-# Example usage
-from services.reranker import re_rank
-reranked_results = re_rank("your query", ["document1", "document2", "document3"], model="rerank-2", top_k=3)
-```
 
 ### LLM Service
-Uses Groq's `llama-3.3-70b-versatile` model for various text processing tasks, including automatic chunking and metadata generation.
-
-```python
-# Example usage
-from services.llm_services import llm_service
-response = llm_service("Your prompt here", "llama-3.3-70b-versatile")
-```
+Uses Mistral AI's `mistral-large-latest` model for various text processing tasks:
 
 ### Text Extraction Service
 Extracts text from various file formats:
@@ -223,7 +214,7 @@ Splits text into manageable chunks using either:
 
 ## Database Schema
 
-The system uses PostgreSQL with the pgvector extension for vector similarity search:
+The system uses Neon PostgreSQL with pgRAG extensions for vector similarity search:
 
 - **Users**: Store user information
 - **Corpora**: Collections of documents
@@ -236,38 +227,54 @@ The `DocumentChunks` table includes a vector column for storing embeddings and u
 
 ### Prerequisites
 - Python 3.8+
-- PostgreSQL with pgvector extension
+- [Neon PostgreSQL account](https://neon.tech) (Free tier available)
 - Node.js & npm
-- API keys for VoyageAI and Groq
+- API keys for VoyageAI and Mistral AI
 
 ### Backend Setup
 
 1. Clone the repository
 2. Install Python dependencies:
    ```
-   cd RAG-ify/server
+   cd Neon-RAG/server
    pip install -r requirements.txt
    ```
-3. Set up the PostgreSQL database using the DDL schema in `server/ddl-schema/ddl.sql`
-4. Configure API keys in the environment variables
+3. Set up your Neon database:
+   - Create an account at [Neon.tech](https://neon.tech)
+   - Create a new project
+   - In the project dashboard, click on "Connection Details"
+   - Copy the connection string (it should look like `postgres://user:password@endpoint/database`)
+   - Enable the "Allow unstable extensions" option in your project settings
+
+4. Set up environment variables in a `.env` file:
+   ```
+   DATABASE_URL=your_neon_database_url_from_step_3
+   VOYAGE_API_KEY=your_voyage_api_key
+   MISTRAL_API_KEY=your_mistral_api_key
+   ```
+5. Initialize the Neon database with pgRAG extensions:
+   ```
+   python init_neon_db.py
+   ```
 5. Start the server:
    ```
-   $env:PYTHONPATH="d:\GitHub\Projects\RAG-ify\server\src"; python -m uvicorn server:app --reload
+   cd server/src
+   uvicorn src.server:app --reload
    ```
 
 ### Frontend Setup
 
 1. Navigate to the frontend directory:
    ```
-   cd rag-navigator-unleashed
+   cd Neon-RAG/client
    ```
 2. Install dependencies:
    ```
    npm install
    ```
-3. Create a `.env` file with your API key:
+3. Create a `.env` file with your API URL:
    ```
-   VITE_API_KEY=your_api_key_here
+   VITE_API_URL=http://localhost:8000/api/v1
    ```
 4. Start the development server:
    ```
@@ -275,18 +282,23 @@ The `DocumentChunks` table includes a vector column for storing embeddings and u
    ```
 5. Open your browser and navigate to `http://localhost:5173`
 
-## API Keys
+## API Keys and External Services
 
-The system uses the following API keys:
+The system uses the following API keys and external services:
 
-- **VoyageAI API Key**: Used for embedding generation and reranking
+- **VoyageAI API Key**: Used for external embedding generation
+  - Sign up at: https://voyageai.com/
   - Service URL: https://api.voyageai.com/
-  - Models:
-    - `voyage-3-large`: For embedding generation
-    - `rerank-2`: For reranking search results
+  - Model: `voyage-3-large`
 
-- **Groq API Key**: Used for LLM services
-  - Service URL: https://api.groq.com/
-  - Model: `llama-3.3-70b-versatile`
+- **Mistral AI API Key**: Used for LLM services
+  - Sign up at: https://console.mistral.ai/
+  - Service URL: https://api.mistral.ai/
+  - Model: `mistral-large-latest`
 
-- **API Authentication**: The system uses a custom API key for endpoint authentication
+- **Neon Database**: Used for PostgreSQL with pgRAG extensions
+  - Sign up at: https://neon.tech/
+  - Features: Serverless PostgreSQL, vector similarity search, and reranking
+  - Required Extensions: `rag`, `rag_bge_small_en_v15`, `rag_jina_reranker_v1_tiny_en`, `pgvector`
+  - Configuration: Enable "Allow unstable extensions" in project settings
+  - Connection: Use the connection string from Neon dashboard as your DATABASE_URL
