@@ -30,59 +30,41 @@ The project consists of two main components:
 Neon-RAG/
 ├── server/                        # Backend API
 │   ├── ddl-schema/                # Database schema definitions
-│   ├── server/
-│   │   └── src/
-│   │       ├── api/
-│   │       │   └── routes.py      # API route definitions
-│   │       ├── controllers/
-│   │       │   ├── auth.py        # Authentication controller
-│   │       │   ├── corpora.py     # Corpus management
-│   │       │   ├── documents.py   # Document management
-│   │       │   ├── document_chunk.py # Document chunk management
-│   │       │   └── users.py       # User management
-│   │       ├── core/
-│   │       │   ├── config.py      # Application configuration
-│   │       │   └── db.py          # Database connection
-│   │       ├── models/
-│   │       │   ├── auth.py        # Authentication models
-│   │       │   ├── corpora.py     # Corpus models
-│   │       │   ├── documents.py   # Document models
-│   │       │   ├── document_chunk.py # Document chunk models
-│   │       │   └── users.py       # User models
-│   │       ├── services/
-│   │       │   ├── chunking.py    # Text chunking service
-│   │       │   ├── embedding.py   # Embedding generation service
-│   │       │   ├── llm_services.py # LLM integration service
-│   │       │   ├── process_document.py # Document processing pipeline
-│   │       │   ├── reranker.py    # Reranking service
-│   │       │   └── text_extractor.py # Text extraction from various file types
-│   │       └── server.py          # Main FastAPI application
+│   ├── server/src/                # Main server code
+│   │   ├── api/                   # API endpoints
+│   │   │   └── routes.py          # API route definitions
+│   │   ├── controllers/           # Logic controllers
+│   │   │   ├── auth.py            # Authentication controller
+│   │   │   ├── documents.py       # Document management
+│   │   │   └── document_chunk.py  # Document chunk management
+│   │   ├── core/                  # Core configuration
+│   │   │   ├── config.py          # Application configuration
+│   │   │   └── db.py              # Database connection
+│   │   ├── models/                # Data models
+│   │   ├── services/              # Service implementations
+│   │   │   ├── chunking.py        # Text chunking service
+│   │   │   ├── embedding.py       # Embedding generation service
+│   │   │   ├── llm_services.py    # LLM integration service
+│   │   │   ├── process_document.py # Document processing pipeline
+│   │   │   └── text_extractor.py  # Text extraction service
+│   │   └── server.py              # Main FastAPI application
 │   ├── init_neon_db.py            # Database initialization script
-│   ├── migrate_to_neon.py         # Database migration script
-│   └── test_db_connection.py      # Database connection test
+│   └── requirements.txt           # Backend dependencies
 │
 ├── client/                        # Frontend Application
 │   ├── public/                    # Static assets
-│   ├── src/
+│   ├── src/                       # Source code
 │   │   ├── components/            # React components
-│   │   │   ├── ui/                # UI components (shadcn-ui)
-│   │   │   ├── AuthForm.tsx       # Authentication form
 │   │   │   ├── ChatInterface.tsx  # Main chat interface
-│   │   │   ├── CorpusTable.tsx    # Corpus management
 │   │   │   ├── DocumentUpload.tsx # Document upload component
-│   │   │   ├── Navbar.tsx         # Navigation component
 │   │   │   └── ResultDisplay.tsx  # Search results display
 │   │   ├── hooks/                 # Custom React hooks
 │   │   ├── lib/                   # Utility functions
 │   │   ├── pages/                 # Page components
 │   │   │   ├── Chat.tsx           # Chat page
-│   │   │   ├── Index.tsx          # Home page
-│   │   │   ├── KnowledgeBase.tsx  # Knowledge base management
-│   │   │   ├── Login.tsx          # Login page
-│   │   │   └── Signup.tsx         # Signup page
+│   │   │   └── KnowledgeBase.tsx  # Knowledge base management
 │   │   ├── services/              # API services
-│   │   │   ├── api.ts             # API client
-│   │   │   └── auth.ts            # Authentication service
+│   │   │   └── api.ts             # API client
 │   │   ├── App.tsx                # Main application component
 │   │   └── main.tsx               # Application entry point
 │   ├── package.json               # Frontend dependencies
@@ -134,14 +116,13 @@ Neon-RAG/
   - `rag_bge_small_en_v15`: For local embedding generation (Unstable)
   - `rag_jina_reranker_v1_tiny_en`: For local reranking (Unstable)
   - `pgvector`: PostgreSQL extension for vector similarity search
-  - `rag_extraction`: For text extraction from documents (Unstable)
-  - `rag_chunking`: For intelligent text chunking (Unstable)
+  - `rag extraction`: For text extraction from PDF/DOCX (`text_from_pdf`, `text_from_docx`)
+  - `rag chunking`: For intelligent chunking by characters or tokens (`chunks_by_character_count`, `chunks_by_token_count`)
 
 ### Document Processing
 - **PyMuPDF**: PDF processing
 - **python-docx**: DOCX file processing
 - **python-pptx**: PowerPoint file processing
-- **Pillow & pytesseract**: Image processing and OCR
 - **BeautifulSoup**: HTML parsing and text extraction
 
 ## API Endpoints
@@ -204,7 +185,6 @@ Extracts text from various file formats:
 - PDF (using PyMuPDF)
 - DOCX (using python-docx)
 - PPTX (using python-pptx)
-- Images (using Pillow and pytesseract)
 - URLs (using requests and BeautifulSoup)
 
 ### Chunking Service
