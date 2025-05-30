@@ -76,7 +76,7 @@ class DocumentsModel:
                                 logger.warning(f"Ignoring invalid JSON column name: {column_name}")
                         else:
                             # Regular column query
-                            if key in ["docId", "documentId", "userId", "corpusId", "docType", "docName", "sourceUrl"]:
+                            if key in ["documentId", "userId", "corpusId", "docType", "docName", "sourceUrl"]:
                                 where_clauses.append(f'"{key}" = %s')
                                 params.append(value)
                             else:
@@ -125,7 +125,7 @@ class DocumentsModel:
         conn = settings.get_db_connection()  
         try:
             cur = conn.cursor()
-            query = 'SELECT * FROM "Documents" WHERE "docId" = %s;'
+            query = 'SELECT * FROM "Documents" WHERE "documentId" = %s;'
             cur.execute(query, (document_id,))
             row = cur.fetchone()
             if row:
@@ -152,7 +152,7 @@ class DocumentsModel:
                 return {"error": "Missing docId for update."}
 
             set_clause = ', '.join([f'"{key}" = %s' for key in document_data_input.keys()])
-            query = f'UPDATE "Documents" SET {set_clause} WHERE "docId" = %s RETURNING *;'
+            query = f'UPDATE "Documents" SET {set_clause} WHERE "documentId" = %s RETURNING *;'
             params = tuple(document_data_input.values()) + (docId,)  # Combine values with docId
             cur.execute(query, params)
             conn.commit()
@@ -185,7 +185,7 @@ class DocumentsModel:
         conn = settings.get_db_connection()
         try:
             cur = conn.cursor()
-            query = 'DELETE FROM "Documents" WHERE "docId" = %s;'
+            query = 'DELETE FROM "Documents" WHERE "documentId" = %s;'
             cur.execute(query, (document_id,))
             conn.commit()
             deleted = cur.rowcount > 0  # True if a row was deleted

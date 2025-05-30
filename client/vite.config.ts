@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => ({
     },
     allowedHosts: [
       "7802b6d6-addd-4790-a54e-726565f8cd8d.lovableproject.com",
+      'myragify.ai', 
+      'myneonrag.ai'
     ],
   },
   plugins: [

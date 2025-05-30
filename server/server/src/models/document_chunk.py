@@ -24,11 +24,9 @@ class DocumentChunkModel:
             query = 'SELECT * FROM "DocumentChunks"'
             params = []
             
-            # Add WHERE clause if conditions are provided
             if where_conditions and isinstance(where_conditions, dict) and where_conditions:
                 where_clauses = []
                 for key, value in where_conditions.items():
-                    # Ensure the column name is valid to prevent SQL injection
                     if key in ["chunkId", "documentId", "chunkIndex", "chunkText", "metaData"]:
                         where_clauses.append(f'"{key}" = %s')
                         params.append(value)
@@ -43,12 +41,12 @@ class DocumentChunkModel:
             rows = cur.fetchall()
             logger.info(f"get_document_chunks result: {len(rows)} records")
             
-            # Format the response to match other endpoints
+            
             formatted_results = []
             if rows:
-                columns = [desc[0] for desc in cur.description]  # Extract column names
+                columns = [desc[0] for desc in cur.description]  
                 for row in rows:
-                    formatted_results.append(dict(zip(columns, row)))  # Convert each row to dictionary
+                    formatted_results.append(dict(zip(columns, row)))  
             
             return {"results": formatted_results}
         except Exception as e:
@@ -66,8 +64,8 @@ class DocumentChunkModel:
             cur.execute(query, (chunk_id,))
             row = cur.fetchone()
             if row:
-                columns = [desc[0] for desc in cur.description]  # Extract column names
-                result = dict(zip(columns, row))  # Convert row to dictionary
+                columns = [desc[0] for desc in cur.description]  
+                result = dict(zip(columns, row))  
                 return {"results": result}  
             return {"results": None} 
         except Exception as e:
@@ -91,8 +89,8 @@ class DocumentChunkModel:
             row = cur.fetchone()
             conn.commit()
             if row:
-                columns = [desc[0] for desc in cur.description]  # Extract column names
-                result = dict(zip(columns, row))  # Convert row to dictionary
+                columns = [desc[0] for desc in cur.description]  
+                result = dict(zip(columns, row))  
                 logger.info(f"create_document_chunk result: {result}")
                 return {"results": result}  
             return {"results": None}  
@@ -152,7 +150,7 @@ class DocumentChunkModel:
             query = 'DELETE FROM "DocumentChunks" WHERE "chunkId" = %s;'
             cur.execute(query, (chunk_id,))
             conn.commit()
-            return cur.rowcount > 0  # Returns True if a row was deleted
+            return cur.rowcount > 0  # returns True if a row was deleted
         except Exception as e:
             print(f"An error occurred in delete_document: {e}")
             return False
@@ -174,10 +172,8 @@ class DocumentChunkModel:
         logger.info(f"Searching document chunks in corpus '{corpus_key}' with threshold {threshold}")
         conn = db_settings.get_db_connection()
         try:
-            # Step 1: Get corpus_id and document_ids
             try:
                 with conn.cursor() as cur:
-                    # Get corpus_id
                     cur.execute('SELECT "corpusId" FROM "Corpora" WHERE "corpusKey" = %s;', (corpus_key,))
                     corpus_row = cur.fetchone()
                     if not corpus_row:
@@ -186,7 +182,6 @@ class DocumentChunkModel:
                     
                     corpus_id = corpus_row[0]
                     
-                    # Get document_ids
                     cur.execute('SELECT "documentId" FROM "Documents" WHERE "corpusId" = %s;', (corpus_id,))
                     document_ids = [row[0] for row in cur.fetchall()]
                     if not document_ids:
@@ -196,11 +191,9 @@ class DocumentChunkModel:
                 logger.error(f"Error getting corpus or documents: {e}")
                 return {"results": "error getting corpus data"}
             
-            # Step 2: Try vector search with fallback
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     try:
-                        # Try the optimized query with pgRAG reranking
                         sql = """
                         WITH corpus_docs AS (
                           SELECT d."documentId"
@@ -228,7 +221,6 @@ class DocumentChunkModel:
                     except Exception as vector_error:
                         logger.warning(f"Vector search failed: {vector_error}, trying fallback search")
                         
-                        # Fallback to a simpler search if vector search fails
                         fallback_sql = """
                         SELECT
                           dc."chunkId",
@@ -250,9 +242,8 @@ class DocumentChunkModel:
                         logger.warning("No matching chunks found")
                         return {"results": "no matching chunks"}
                     
-                    # Step 3: Try to rerank the results if we have enough data
                     try:
-                        # Only attempt reranking if we have the question text
+                        # only attempt reranking if we have the question text
                         with conn.cursor() as rerank_cur:
                             rerank_cur.execute('SELECT "questionText" FROM "Questions" WHERE "questionEmbedding" = %s::vector LIMIT 1;', 
                                               (question_embedding,))
@@ -262,7 +253,6 @@ class DocumentChunkModel:
                                 question_text = question_row[0]
                                 logger.info("Found question text, attempting reranking")
                                 
-                                # Try to rerank each chunk
                                 for row in rows:
                                     try:
                                         rerank_cur.execute('SELECT rag_jina_reranker_v1_tiny_en.rerank_distance(%s, %s);', 
@@ -271,16 +261,12 @@ class DocumentChunkModel:
                                         row["rerankScore"] = rerank_score
                                     except Exception as rerank_error:
                                         logger.warning(f"Individual reranking failed: {rerank_error}")
-                                        # Keep the existing score if reranking fails
                                 
-                                # Sort by rerank score (lower is better)
                                 rows = sorted(rows, key=lambda x: x["rerankScore"])
                                 logger.info("Successfully reranked results")
                     except Exception as rerank_error:
                         logger.warning(f"Reranking process failed: {rerank_error}")
-                        # Continue with the original ordering if reranking fails
                     
-                    # Map each row dict into our dataclass
                     return [DocumentChunk(**row) for row in rows]
                     
             except Exception as search_error:

@@ -1,5 +1,7 @@
 import io
 import tempfile
+import os
+import psycopg2
 from core.config import settings
 import pathlib
 from bs4 import BeautifulSoup
@@ -23,33 +25,36 @@ def extract_text(file_type, file_bytes_or_url):
     file_type = file_type.lower()
 
     if file_type == 'pdf':
-        import pymupdf
-        import pymupdf4llm
-
-        # First attempt with pymupdf4llm
-        bytes_io = io.BytesIO(file_bytes_or_url)
-        doc = pymupdf.open(stream=bytes_io, filetype="pdf")
-        md_text = pymupdf4llm.to_markdown(doc)
-        
-        # Check if extracted text has less than 50 words
-        if len(md_text.split()) < 50 and genai is not None:
-            # Fallback to Gemini text extractor
-            try:
-                # Initialize Gemini client
-                client = genai.Client(api_key=settings.GEMINI_API_KEY)
-                
-                # Save the PDF to a temporary file
-                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
-                    temp_file.write(file_bytes_or_url)
-                    temp_path = pathlib.Path(temp_file.name)
-                
-                # Upload the PDF using the File API
-                sample_file = client.files.upload(file=temp_path)
-                
-                # Extract text using Gemini
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=[sample_file, """Extract all text from this document while maintaining the original structure and flow. 
+        try:
+            # First attempt with PostgreSQL function
+            conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+            with conn.cursor() as cur:
+                cur.execute("SELECT rag.text_from_pdf(%s);", (psycopg2.Binary(file_bytes_or_url),))
+                result = cur.fetchone()
+                extracted_text = result[0] if result else ""
+                print("Text extracted using Neon's rag")
+            conn.close()
+            
+            # Check if extracted text has less than 50 words
+            if len(extracted_text.split()) < 50 and genai is not None:
+                print("Using Gemini for PDF extraction due to insufficient text from Neon's rag")
+                # Fallback to Gemini text extractor
+                try:
+                    # Initialize Gemini client
+                    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+                    
+                    # Save the PDF to a temporary file
+                    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                        temp_file.write(file_bytes_or_url)
+                        temp_path = pathlib.Path(temp_file.name)
+                    
+                    # Upload the PDF using the File API
+                    sample_file = client.files.upload(file=temp_path)
+                    
+                    # Extract text using Gemini
+                    response = client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=[sample_file, """Extract all text from this document while maintaining the original structure and flow. 
 
 For any images, charts, or figures found in the document:
 1) Provide an overall description of what the image shows
@@ -62,33 +67,59 @@ Format each image analysis as:
 After extracting all content, please provide a concise summary of the entire document (2-3 sentences) under the heading [DOCUMENT SUMMARY].
 
 Ensure that you capture the key points, main arguments, and overall purpose of the document in your extraction and summary."""]
-                )
-                
-                # Clean up the temporary file
-                temp_path.unlink()
-                
-                # Return the extracted text from Gemini
-                gemini_text = response.text
-                
-                # If Gemini also returned minimal text, use the better of the two
-                if len(gemini_text.split()) > len(md_text.split()):
-                    return gemini_text
-                return md_text
-                
-            except Exception as e:
-                # If Gemini extraction fails, return the original text
-                print(f"Gemini extraction failed: {str(e)}")
-                return md_text
-        
-        return md_text
+                    )
+                    
+                    # Clean up the temporary file
+                    temp_path.unlink()
+                    
+                    # Return the extracted text from Gemini
+                    gemini_text = response.text
+                    
+                    # If Gemini also returned minimal text, use the better of the two
+                    if len(gemini_text.split()) > len(extracted_text.split()):
+                        return gemini_text
+                    return extracted_text
+                    
+                except Exception as e:
+                    # If Gemini extraction fails, return the original text
+                    print(f"Gemini extraction failed: {str(e)}")
+                    return extracted_text
+            
+            return extracted_text
+            
+        except Exception as e:
+            # Fallback to pymupdf if PostgreSQL extraction fails
+            print(f"PostgreSQL PDF extraction failed: {str(e)}")
+            import pymupdf
+            import pymupdf4llm
+
+            # Fallback to pymupdf4llm
+            bytes_io = io.BytesIO(file_bytes_or_url)
+            doc = pymupdf.open(stream=bytes_io, filetype="pdf")
+            md_text = pymupdf4llm.to_markdown(doc)
+            return md_text
     
 
     elif file_type == 'docx':
-        import docx
-        bytes_io = io.BytesIO(file_bytes_or_url)
-        doc = docx.Document(bytes_io)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        return text
+        try:
+            # First attempt with PostgreSQL function
+            conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+            with conn.cursor() as cur:
+                cur.execute("SELECT rag.text_from_docx(%s);", (psycopg2.Binary(file_bytes_or_url),))
+                result = cur.fetchone()
+                extracted_text = result[0] if result else ""
+                print("Text extracted using Neon's rag")
+            conn.close()
+            return extracted_text
+            
+        except Exception as e:
+            # Fallback to python-docx if PostgreSQL extraction fails
+            print(f"PostgreSQL DOCX extraction failed: {str(e)}")
+            import docx
+            bytes_io = io.BytesIO(file_bytes_or_url)
+            doc = docx.Document(bytes_io)
+            text = "\n".join([para.text for para in doc.paragraphs])
+            return text
 
     elif file_type in ['ppt', 'pptx']:
         from pptx import Presentation

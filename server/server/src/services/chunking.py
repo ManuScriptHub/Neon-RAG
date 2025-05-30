@@ -64,6 +64,7 @@ def chunking(data: dict):
                     query = "SELECT unnest(rag_bge_small_en_v15.chunks_by_token_count(%s, %s, %s));"
                     cur.execute(query, (context, chunk_size // 4, chunk_overlap // 4))  # Approximate tokens from characters
                     chunks = [row[0] for row in cur.fetchall()]
+                    print(f"pgRAG chunking returned {len(chunks)} chunks.")
                     
                     if not chunks:
                         # Fallback to character-based chunking

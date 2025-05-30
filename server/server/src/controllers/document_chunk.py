@@ -16,7 +16,7 @@ def get_documents_chunks(where_conditions=None):
         status_code = response.get("status_code", 500)
         raise HTTPException(status_code=status_code, detail=response["error"])
     
-    # Ensure response has a "results" key with a list value
+
     if "results" in response and not isinstance(response["results"], list):
         response["results"] = [response["results"]] if response["results"] is not None else []
     
@@ -31,8 +31,7 @@ def get_document_chunk(chunk_id):
     
     if not response or not response.get("results"):
         raise HTTPException(status_code=404, detail=f"Document chunk with ID {chunk_id} not found")
-    
-    # Ensure response has a "results" key with a list value
+
     if "results" in response and not isinstance(response["results"], list):
         response["results"] = [response["results"]] if response["results"] is not None else []
     
@@ -40,7 +39,7 @@ def get_document_chunk(chunk_id):
 
 def create_document_chunk(chunk_input_data):
     try:
-        # Validate required fields
+        
         if not chunk_input_data:
             raise HTTPException(status_code=400, detail="Chunk data is required")
             
@@ -50,18 +49,16 @@ def create_document_chunk(chunk_input_data):
         if "documentId" not in chunk_input_data or not chunk_input_data["documentId"]:
             raise HTTPException(status_code=400, detail="Document ID is required")
             
-        # Generate embedding for the chunkText
-        # As per requirements, we'll continue using Voyage for embeddings
         try:
-            # Check if embedding is already provided (from process_document)
+
             if "embeddingData" not in chunk_input_data:
-                # First try with pgRAG
+                # first try with pgRAG
                 try:
                     chunk_input_data["embeddingData"] = get_pgrag_embedding_for_passage(chunk_input_data["chunkText"])
                     logger.info("Generated embedding using pgRAG")
                 except Exception as e:
                     logger.warning(f"pgRAG embedding failed, falling back to Voyage: {e}")
-                    # Fallback to Voyage
+                    # fallback to Voyage
                     chunk_input_data["embeddingData"] = get_embedding("voyage-3-large", [chunk_input_data["chunkText"]])[0]
         except Exception as e:
             logger.error(f"Failed to generate embedding: {e}")
@@ -73,7 +70,7 @@ def create_document_chunk(chunk_input_data):
             status_code = response.get("status_code", 500)
             raise HTTPException(status_code=status_code, detail=response["error"])
         
-        # Ensure response has a "results" key with a list value
+
         if "results" in response and not isinstance(response["results"], list):
             response["results"] = [response["results"]] if response["results"] is not None else []
         
@@ -97,7 +94,6 @@ def update_document_chunk(chunk_id, chunk_input_data):
         status_code = response.get("status_code", 500)
         raise HTTPException(status_code=status_code, detail=response["error"])
     
-    # Ensure response has a "results" key with a list value
     if "results" in response and not isinstance(response["results"], list):
         response["results"] = [response["results"]] if response["results"] is not None else []
     
@@ -135,11 +131,11 @@ def search_document_chunk(question, top_k, model, corpus_key, threshold):
         raise HTTPException(status_code=400, detail="Embedding model is required")
     
     try:
-        # Step 1: Generate embedding for the question with robust fallback
+        
         embedding_source = None
         question_embedding = None
         
-        # Try pgRAG first for embedding
+        # try pgRAG first for embedding
         try:
             question_embedding = get_pgrag_embedding_for_query(question)
             embedding_source = "pgRAG"
@@ -147,7 +143,7 @@ def search_document_chunk(question, top_k, model, corpus_key, threshold):
         except Exception as e:
             logger.warning(f"pgRAG query embedding failed, falling back to Voyage: {e}")
             
-            # Fallback to Voyage if pgRAG fails
+            # fallback to Voyage
             try:
                 question_embedding = get_embedding(model, [question])[0]
                 embedding_source = "Voyage"
@@ -159,44 +155,35 @@ def search_document_chunk(question, top_k, model, corpus_key, threshold):
         if not question_embedding:
             raise HTTPException(status_code=500, detail="Failed to generate embedding for the question")
         
-        # Step 2: Search for relevant chunks
+        # Search for relevant chunks
         chunks = documents_data.search_document_chunk(question_embedding, top_k, corpus_key, threshold)
         
-        # Step 3: Handle empty results
         if not chunks or len(chunks) == 0 or (isinstance(chunks, dict) and "results" in chunks):
             logger.warning(f"No relevant chunks found: {chunks if isinstance(chunks, dict) else 'empty list'}")
             return {"results": ["No relevant information found for your question."]}
-        
-        # Step 4: Extract text and similarity scores from chunks
+    
         chunk_data = []
         
-        # First, collect all rerank scores to determine the range
         rerank_scores = []
         for chunk in chunks:
             if hasattr(chunk, "chunkText") and hasattr(chunk, "rerankScore"):
                 rerank_scores.append(getattr(chunk, "rerankScore"))
         
-        # Calculate min and max scores if we have any scores
+        # calculate min and max scores if we have any scores
         min_score = min(rerank_scores) if rerank_scores else 0
         max_score = max(rerank_scores) if rerank_scores else 1
         score_range = max_score - min_score if max_score > min_score else 1
         
-        # Now process each chunk with better normalization
         for chunk in chunks:
             if hasattr(chunk, "chunkText"):
                 # Extract similarity score from rerankScore if available, default to 0.5 if not
                 rerank_score = getattr(chunk, "rerankScore", 0.5)
                 
-                # Normalize the score - lower rerank scores are better
-                # If all scores are the same, use a default distribution
                 if score_range < 0.001:
-                    # If all scores are identical, assign decreasing scores based on position
                     position_index = len(chunk_data)
                     normalized_score = max(0.1, 1.0 - (position_index * 0.1))
                     logger.info(f"Using position-based score: {normalized_score} for position {position_index}")
                 else:
-                    # Otherwise normalize based on the score range
-                    # Convert to a value between 0 and 1 (lower rerank score is better)
                     normalized_score = max(0.1, min(0.95, 1 - ((rerank_score - min_score) / score_range)))
                     logger.info(f"Normalized score: {normalized_score} from rerank_score: {rerank_score} (min: {min_score}, max: {max_score})")
                 
@@ -206,35 +193,28 @@ def search_document_chunk(question, top_k, model, corpus_key, threshold):
             logger.warning("No chunk text found in search results")
             return {"results": ["No relevant information found for your question."]}
         
-        # Step 5: Format chunks for response
         formatted_chunks = []
         
-        # Sort chunk_data by similarity score (highest first)
         sorted_chunk_data = sorted(chunk_data, key=lambda x: x[1], reverse=True)
         
-        # Apply a more aggressive threshold to filter out less relevant chunks
-        # Only keep chunks with at least 50% similarity or the top 3, whichever is more
+    
         filtered_chunk_data = [
             chunk for chunk in sorted_chunk_data 
             if chunk[1] >= 0.5  # At least 50% similarity
         ]
         
-        # Always include at least the top 3 chunks if available
+        # to include at least the top 3 chunks if available
         if len(filtered_chunk_data) < 3 and len(sorted_chunk_data) > 0:
             filtered_chunk_data = sorted_chunk_data[:min(3, len(sorted_chunk_data))]
         
         logger.info(f"Filtered from {len(sorted_chunk_data)} to {len(filtered_chunk_data)} chunks based on relevance")
         
-        # Format the filtered chunks for response
         for i, (chunk_text, similarity) in enumerate(filtered_chunk_data):
-            # Format as [index, text, similarity_score]
             formatted_chunks.append((i+1, chunk_text, similarity))
         
-        # Step 6: Build context from chunks
-        # The chunks are already sorted and filtered by relevance
+        # build context from chunks
         context = "\n\n\n".join([chunk[1] for chunk in formatted_chunks])
         
-        # Step 7: Generate response using LLM
         prompt = f"""
         question: {question}
         You are a helpful assistant, your task is to summarize the given context of information.
@@ -248,7 +228,6 @@ def search_document_chunk(question, top_k, model, corpus_key, threshold):
             result = llm_service(prompt, "", "this is a data about some information")
             logger.info("Successfully generated LLM response")
             
-            # Return results with metadata about which methods were used
             return {
                 "results": [result], 
                 "chunks": formatted_chunks,
